@@ -21,6 +21,7 @@
 #include <linux/device.h>
 #include <linux/hid.h>
 #include <linux/module.h>
+#include <linux/version.h>
 
 #define USB_VENDOR_ID_WACOM                     0x056a
 #define USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH  0x81
@@ -158,7 +159,9 @@ static int wacom_probe(struct hid_device *hdev,
 	struct hid_input *hidinput;
 	struct input_dev *input;
 	struct wacom_data *wdata;
+	char rep_data[2];
 	int ret;
+	int limit;
 
 	wdata = kzalloc(sizeof(*wdata), GFP_KERNEL);
 	if (wdata == NULL) {
@@ -168,6 +171,7 @@ static int wacom_probe(struct hid_device *hdev,
 
 	hid_set_drvdata(hdev, wdata);
 
+	/* Parse the HID report now */
 	ret = hid_parse(hdev);
 	if (ret) {
 		dev_err(&hdev->dev, "parse failed\n");
@@ -177,6 +181,38 @@ static int wacom_probe(struct hid_device *hdev,
 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
 	if (ret) {
 		dev_err(&hdev->dev, "hw start failed\n");
+		goto err_free;
+	}
+
+	/* Set Wacom mode2 */
+	rep_data[0] = 0x03; rep_data[1] = 0x00;
+	limit = 3;
+	do {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
+		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
+				HID_FEATURE_REPORT);
+#else
+		ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
+#endif
+	} while (ret < 0 && limit-- > 0);
+	if (ret < 0) {
+		dev_err(&hdev->dev, "failed to poke device #1, %d\n", ret);
+		goto err_free;
+	}
+
+	/* 0x06 - high reporting speed, 0x05 - low speed */
+	rep_data[0] = 0x06; rep_data[1] = 0x00;
+	limit = 3;
+	do {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
+		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
+				HID_FEATURE_REPORT);
+#else
+		ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
+#endif
+	} while (ret < 0 && limit-- > 0);
+	if (ret < 0) {
+		dev_err(&hdev->dev, "failed to poke device #2, %d\n", ret);
 		goto err_free;
 	}
 
