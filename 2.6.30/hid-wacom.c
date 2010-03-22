@@ -106,6 +106,52 @@ static int wacom_ac_get_property(struct power_supply *psy,
 }
 #endif
 
+static void wacom_poke(struct hid_device *hdev, u8 speed)
+{
+	int limit, ret;
+	char rep_data[2];
+
+	rep_data[0] = 0x03 ; rep_data[1] = 0x00;
+	limit = 3;
+	do {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
+		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
+			HID_FEATURE_REPORT);
+#else
+		ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
+#endif
+	} while (ret < 0 && limit-- > 0);
+
+	if (ret >= 0) {
+		if (speed == 0)
+			rep_data[0] = 0x05;
+		else
+			rep_data[0] = 0x06;
+
+		rep_data[1] = 0x00;
+		limit = 3;
+		do {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
+			ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
+					HID_FEATURE_REPORT);
+#else
+			ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
+#endif
+		} while (ret < 0 && limit-- > 0);
+
+		if (ret >= 0)
+			return;
+	}
+
+	/*
+	 * Note that if the raw queries fail, it's not a hard failure and it
+	 * is safe to continue
+	 */
+	dev_warn(&hdev->dev, "failed to poke device, command %d, err %d\n",
+				rep_data[0], ret);
+	return;
+}
+
 static int wacom_raw_event(struct hid_device *hdev, struct hid_report *report,
 		u8 *raw_data, int size)
 {
@@ -239,9 +285,7 @@ static int wacom_probe(struct hid_device *hdev,
 	struct hid_input *hidinput;
 	struct input_dev *input;
 	struct wacom_data *wdata;
-	char rep_data[2];
 	int ret;
-	int limit;
 
 	wdata = kzalloc(sizeof(*wdata), GFP_KERNEL);
 	if (wdata == NULL) {
@@ -264,38 +308,8 @@ static int wacom_probe(struct hid_device *hdev,
 		goto err_free;
 	}
 
-	/*
-	 * Note that if the raw queries fail, it's not a hard failure and it
-	 * is safe to continue
-	 */
-
-	/* Set Wacom mode2 */
-	rep_data[0] = 0x03; rep_data[1] = 0x00;
-	limit = 3;
-	do {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
-		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-				HID_FEATURE_REPORT);
-#else
-		ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
-#endif
-	} while (ret < 0 && limit-- > 0);
-	if (ret < 0)
-		dev_warn(&hdev->dev, "failed to poke device #1, %d\n", ret);
-
-	/* 0x06 - high reporting speed, 0x05 - low speed */
-	rep_data[0] = 0x06; rep_data[1] = 0x00;
-	limit = 3;
-	do {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
-		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-				HID_FEATURE_REPORT);
-#else
-		ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
-#endif
-	} while (ret < 0 && limit-- > 0);
-	if (ret < 0)
-		dev_warn(&hdev->dev, "failed to poke device #2, %d\n", ret);
+	/* Set Wacom mode 2 with high reporting speed */
+	wacom_poke(hdev, 1);
 
 #ifdef CONFIG_HID_WACOM_POWER_SUPPLY
 	wdata->battery.properties = wacom_battery_props;
