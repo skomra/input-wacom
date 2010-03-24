@@ -21,6 +21,7 @@
 #include <linux/device.h>
 #include <linux/hid.h>
 #include <linux/module.h>
+#include <linux/slab.h>
 #include <linux/version.h>
 #ifdef CONFIG_HID_WACOM_POWER_SUPPLY
 #include <linux/power_supply.h>
