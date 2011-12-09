@@ -25,6 +25,8 @@
 #include <linux/hid.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/version.h>
+
 #ifdef CONFIG_HID_WACOM_POWER_SUPPLY
 #include <linux/power_supply.h>
 #endif
@@ -545,6 +547,11 @@ static int wacom_probe(struct hid_device *hdev,
 			 "can't create ac battery attribute, err: %d\n", ret);
 		goto err_ac;
 	}
+#endif
+
+#if defined (CONFIG_HID_WACOM_POWER_SUPPLY) && LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0)
+	power_supply_powers(&wdata->battery, &hdev->dev);
+	power_supply_powers(&wdata->ac, &hdev->dev);
 #endif
 	return 0;
 
