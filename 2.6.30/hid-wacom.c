@@ -246,53 +246,12 @@ static int wacom_ac_get_property(struct power_supply *psy,
 static void wacom_set_features(struct hid_device *hdev, u8 speed)
 {
 	struct wacom_data *wdata = hid_get_drvdata(hdev);
-	int ret;
+	int limit, ret;
 	__u8 rep_data[2];
 
-	if (speed == 1)
-		wdata->features &= ~0x20;
-	else
-		wdata->features |= 0x20;
-
-	rep_data[0] = 0x03;
-	rep_data[1] = wdata->features;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
-	ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-				HID_FEATURE_REPORT);
-#else
-	ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
-#endif
-
-	if (ret >= 0)
-		wdata->high_speed = speed;
-
-	return;
-}
-
-static void wacom_poke(struct hid_device *hdev, u8 speed)
-{
-	struct wacom_data *wdata = hid_get_drvdata(hdev);
-	int limit, ret;
-	char rep_data[2];
-
-	rep_data[0] = 0x03 ; rep_data[1] = 0x00;
-	limit = 3;
-	do {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
-		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-			HID_FEATURE_REPORT);
-#else
-		ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
-#endif
-	} while (ret < 0 && limit-- > 0);
-
-	if (ret >= 0) {
-		if (speed == 0)
-			rep_data[0] = 0x05;
-		else
-			rep_data[0] = 0x06;
-
-		rep_data[1] = 0x00;
+	switch (hdev->product) {
+	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
+		rep_data[0] = 0x03 ; rep_data[1] = 0x00;
 		limit = 3;
 		do {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
@@ -304,17 +263,56 @@ static void wacom_poke(struct hid_device *hdev, u8 speed)
 		} while (ret < 0 && limit-- > 0);
 
 		if (ret >= 0) {
+			if (speed == 0)
+				rep_data[0] = 0x05;
+			else
+				rep_data[0] = 0x06;
+
+			rep_data[1] = 0x00;
+			limit = 3;
+			do {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
+				ret = hdev->hid_output_raw_report(hdev,
+					rep_data, 2, HID_FEATURE_REPORT);
+#else
+				ret = hdev->hid_output_raw_report(hdev,
+					rep_data, 2);
+#endif
+			} while (ret < 0 && limit-- > 0);
+
+			if (ret >= 0) {
+				wdata->high_speed = speed;
+				return;
+			}
+ 		}
+
+		/*
+		 * Note that if the raw queries fail, it's not a hard failure
+		 * and it is safe to continue
+		 */
+		dev_warn(&hdev->dev, "failed to poke device, command %d, err %d\n",
+			 rep_data[0], ret);
+		break;
+	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
+		if (speed == 1)
+			wdata->features &= ~0x20;
+		else
+			wdata->features |= 0x20;
+
+		rep_data[0] = 0x03;
+		rep_data[1] = wdata->features;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
+		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
+					HID_FEATURE_REPORT);
+#else
+		ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
+#endif
+		if (ret >= 0)
 			wdata->high_speed = speed;
-			return;
-		}
+		break;
 	}
 
-	/*
-	 * Note that if the raw queries fail, it's not a hard failure and it
-	 * is safe to continue
-	 */
-	dev_warn(&hdev->dev, "failed to poke device, command %d, err %d\n",
-		 rep_data[0], ret);
 	return;
 }
 
@@ -338,7 +336,7 @@ static ssize_t wacom_store_speed(struct device *dev,
 		return -EINVAL;
 
 	if (new_speed == 0 || new_speed == 1) {
-		wacom_poke(hdev, new_speed);
+		wacom_set_features(hdev, new_speed);
 		return strnlen(buf, PAGE_SIZE);
 	} else
 		return -EINVAL;
@@ -750,22 +748,17 @@ static int wacom_probe(struct hid_device *hdev,
 		dev_warn(&hdev->dev,
 			 "can't create sysfs speed attribute err: %d\n", ret);
 
-	switch (hdev->product) {
-	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
-		/* Set Wacom mode 2 with high reporting speed */
-		wacom_poke(hdev, 1);
-		break;
-	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
+	wdata->features = 0;
+	wacom_set_features(hdev, 1);
+
+	if (hdev->product == USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH) {
 		sprintf(hdev->name, "%s", "Wacom Intuos4 WL");
-		wdata->features = 0;
-		wacom_set_features(hdev, 1);
 		ret = wacom_initialize_leds(hdev);
 		if (ret) {
 			dev_warn(&hdev->dev,
 				 "can't create led attribute, err: %d\n", ret);
 			goto destroy_leds;
 		}
-		break;
 	}
 
 #ifdef CONFIG_HID_WACOM_POWER_SUPPLY
