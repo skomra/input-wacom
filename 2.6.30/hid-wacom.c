@@ -243,20 +243,29 @@ static int wacom_ac_get_property(struct power_supply *psy,
 }
 #endif
 
-static void wacom_set_features(struct hid_device *hdev)
+static void wacom_set_features(struct hid_device *hdev, u8 speed)
 {
+	struct wacom_data *wdata = hid_get_drvdata(hdev);
 	int ret;
 	__u8 rep_data[2];
 
-	/*set high speed, tablet mode*/
+	if (speed == 1)
+		wdata->features &= ~0x20;
+	else
+		wdata->features |= 0x20;
+
 	rep_data[0] = 0x03;
-	rep_data[1] = 0x20;
+	rep_data[1] = wdata->features;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
 	ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
 				HID_FEATURE_REPORT);
 #else
 	ret = hdev->hid_output_raw_report(hdev, rep_data, 2);
 #endif
+
+	if (ret >= 0)
+		wdata->high_speed = speed;
+
 	return;
 }
 
@@ -749,7 +758,7 @@ static int wacom_probe(struct hid_device *hdev,
 	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
 		sprintf(hdev->name, "%s", "Wacom Intuos4 WL");
 		wdata->features = 0;
-		wacom_set_features(hdev);
+		wacom_set_features(hdev, 1);
 		ret = wacom_initialize_leds(hdev);
 		if (ret) {
 			dev_warn(&hdev->dev,
