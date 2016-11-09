@@ -22,7 +22,9 @@
 #include <linux/hid.h>
 #include <linux/module.h>
 
-#include "hid-ids.h"
+#define USB_VENDOR_ID_WACOM             	0x056a
+#define USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH  0x81
+#define USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH   0x00BD
 
 struct wacom_data {
 	__u16 tool;
