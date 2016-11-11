@@ -26,6 +26,9 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
+#define CONFIG_HID_WACOM_POWER_SUPPLY
+#endif
 
 #ifdef CONFIG_HID_WACOM_POWER_SUPPLY
 #include <linux/power_supply.h>
