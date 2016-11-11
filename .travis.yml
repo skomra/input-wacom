@@ -14,7 +14,8 @@ env:
   - KERNEL="linux-4.1"      # Conditional 3.17
   - KERNEL="linux-3.19"     # Conditional 3.17
   - KERNEL="linux-3.18"     # Conditional 3.17
-  - KERNEL="linux-3.3"      # Conditional 2.6.38
+  - KERNEL="linux-3.3"      # conditional 2.6.38
+  - KERNEL="linux-3.5"      # conditional 2.6.38
   - KERNEL="linux-2.6.35"   # Conditional 2.6.30
 
 addons:
