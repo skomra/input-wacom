@@ -22,10 +22,10 @@
 #define HID_DEVICET_HID		(USB_TYPE_CLASS | 0x01)
 #define HID_DEVICET_REPORT	(USB_TYPE_CLASS | 0x02)
 #define HID_USAGE_UNDEFINED		0x00
-#define HID_USAGE_PAGE			0x05
+#define HID_USAGE_PAGE			0x04
 #define HID_USAGE_PAGE_DIGITIZER	0x0d
 #define HID_USAGE_PAGE_DESKTOP		0x01
-#define HID_USAGE			0x09
+#define HID_USAGE			0x08
 #define HID_USAGE_X			((HID_USAGE_PAGE_DESKTOP << 16) | 0x30)
 #define HID_USAGE_Y			((HID_USAGE_PAGE_DESKTOP << 16) | 0x31)
 #define HID_USAGE_PRESSURE		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x30)
@@ -33,7 +33,7 @@
 #define HID_USAGE_Y_TILT		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x3e)
 #define HID_USAGE_FINGER		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x22)
 #define HID_USAGE_STYLUS		((HID_USAGE_PAGE_DIGITIZER << 16) | 0x20)
-#define HID_COLLECTION			0xa1
+#define HID_COLLECTION			0xa0
 #define HID_COLLECTION_LOGICAL		0x02
 #define HID_COLLECTION_END		0xc0
 
@@ -221,15 +221,35 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 		goto out;
 
 	for (i = 0; i < hid_desc->wDescriptorLength; i++) {
+		int item = report[i] & 0xFC;
+		int len = report[i] & 0x03;
+		int data = 0;
 
-		switch (report[i]) {
+		switch (len) {
+		case 3:
+			len = 4;
+			data |= (report[i+4] << 24);
+			data |= (report[i+3] << 16);
+			/* fall through */
+		case 2:
+			data |= (report[i+2] << 8);
+			/* fall through */
+		case 1:
+			data |= (report[i+1]);
+			break;
+		}
+
+		switch (item) {
 		case HID_USAGE_PAGE:
-			page = report[i + 1];
-			i++;
+			page = data;
 			break;
 
 		case HID_USAGE:
-			switch (page << 16 | report[i + 1]) {
+			if (len < 4) {
+				data |= (page << 16);
+			}
+
+			switch (data) {
 			case HID_USAGE_X:
 				if (finger) {
 					features->device_type = BTN_TOOL_DOUBLETAP;
@@ -253,7 +273,7 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							get_unaligned_le16(&report[i + 5]);
 						features->x_max =
 							get_unaligned_le16(&report[i + 8]);
-						i += 15;
+						len = 15;
 					} else if (features->type == WACOM_MSPROT ||
 						   features->type == MTTPC_B) {
 						features->x_max =
@@ -262,7 +282,7 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							get_unaligned_le16(&report[i + 6]);
 						features->unit = report[i - 5];
 						features->unitExpo = report[i - 3];
-						i += 9;
+						len = 9;
 					} else {
 						features->x_max =
 							get_unaligned_le16(&report[i + 3]);
@@ -270,7 +290,7 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							get_unaligned_le16(&report[i + 6]);
 						features->unit = report[i + 9];
 						features->unitExpo = report[i + 11];
-						i += 12;
+						len = 12;
 					}
 				} else if (pen) {
 					/* penabled only accepts exact bytes of data */
@@ -282,7 +302,7 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 					features->device_type = BTN_TOOL_PEN;
 					features->x_max =
 						get_unaligned_le16(&report[i + 3]);
-					i += 4;
+					len = 4;
 				}
 				break;
 
@@ -294,49 +314,47 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							get_unaligned_le16(&report[i + 3]);
 						features->y_phy =
 							get_unaligned_le16(&report[i + 6]);
-						i += 7;
+						len = 7;
 					} else if (features->type == WACOM_MSPROT ||
 						   features->type == MTTPC_B) {
 						features->y_max =
 							get_unaligned_le16(&report[i + 3]);
 						features->y_phy =
 							get_unaligned_le16(&report[i + 6]);
-						i += 9;
+						len = 9;
 					} else if (features->type == BAMBOO_PT) {
 						features->y_phy =
 							get_unaligned_le16(&report[i + 3]);
 						features->y_max =
 							get_unaligned_le16(&report[i + 6]);
-						i += 12;
+						len = 12;
 					} else {
 						features->y_max =
 							features->x_max;
 						features->y_phy =
 							get_unaligned_le16(&report[i + 3]);
-						i += 4;
+						len = 4;
 					}
 				} else if (pen) {
 					features->y_max =
 						get_unaligned_le16(&report[i + 3]);
-					i += 4;
+					len = 4;
 				}
 				break;
 
 			case HID_USAGE_FINGER:
 				finger = 1;
-				i++;
 				break;
 
 			case HID_USAGE_STYLUS:
 				pen = 1;
-				i++;
 				break;
 
 			case HID_USAGE_PRESSURE:
 				if (pen) {
 					features->pressure_max =
 						get_unaligned_le16(&report[i + 3]);
-					i += 4;
+					len = 4;
 				}
 				break;
 			}
@@ -346,16 +364,18 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 			/* reset UsagePage and Finger */
 			finger = page = 0;
 			break;
+
 		case HID_COLLECTION:
-			i++;
-			switch (report[i]) {
+			switch (data) {
 			case HID_COLLECTION_LOGICAL:
-				i += wacom_parse_logical_collection(&report[i],
+				len = wacom_parse_logical_collection(&report[i],
 								    features);
 				break;
 			}
 			break;
 		}
+
+		i += len;
 	}
 
  out:
