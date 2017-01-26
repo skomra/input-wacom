@@ -608,9 +608,14 @@ static int wacom_led_control(struct wacom *wacom)
 	buf = kzalloc(9, GFP_KERNEL);
 	if (!buf)
 		return -ENOMEM;
+	if (wacom->wacom_wac.features.type == INTUOSP2){
 
-	if (wacom->wacom_wac.features.type >= INTUOS5S &&
-	    wacom->wacom_wac.features.type <= INTUOSPL)	{
+		buf[0] = WAC_CMD_LED_CONTROL_GENERIC;
+		buf[1] = wacom->led.llv;
+		buf[2] = wacom->led.select[0] & 0x03;
+
+	} else if (wacom->wacom_wac.features.type >= INTUOS5S &&
+	    wacom->wacom_wac.features.type <= INTUOSP2)	{
 		/* Touch Ring and crop mark LED luminance may take on
 		 * one of four values:
 		 *    0 = Low; 1 = Medium; 2 = High; 3 = Off
@@ -790,6 +795,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
 	case INTUOSPS:
 	case INTUOSPM:
 	case INTUOSPL:
+	case INTUOSP2:
 		wacom->led.select[0] = 0;
 		wacom->led.select[1] = 0;
 		wacom->led.llv = 32;

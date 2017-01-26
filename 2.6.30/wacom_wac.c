@@ -1477,12 +1477,6 @@ static int wacom_tpc_irq(struct wacom_wac *wacom, size_t len)
 	return retval;
 }
 
-static int wacom_intuosp2_irq(struct wacom_wac *wacom)
-{
-	printk("wacom_intuosp2_irq: report id %d\n", wacom->data[0]);
-	return 0;
-}
-
 static int wacom_mspro_pad_irq(struct wacom_wac *wacom)
 {
 	unsigned char *data = wacom->data;
@@ -1514,6 +1508,51 @@ static int wacom_mspro_pad_irq(struct wacom_wac *wacom)
 	input_report_abs(input, ABS_MISC, prox ? PAD_DEVICE_ID : 0);
 
 	input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
+
+	return 1;
+}
+
+static int wacom_intuosp2_pad_irq(struct wacom_wac *wacom)
+{
+	unsigned char *data = wacom->data;
+	struct input_dev *input = wacom->input;
+	int nbuttons = wacom->features.numbered_buttons;
+	bool prox;
+	int buttons, ring;
+	bool active = false;
+
+	switch (nbuttons) {
+		case 9:
+			buttons = (data[1]) | (data[3] << 8);
+			break;
+		default:
+			dev_warn(input->dev.parent, "%s: unsupported device #%d\n", __func__, data[0]);
+			return 0;
+	}
+
+	ring = le16_to_cpup((__le16 *)&data[4]);
+
+	if (ring != 0x7f)
+		prox = buttons || ring;
+	else
+		prox = buttons;
+
+	wacom_report_numbered_buttons(input, nbuttons, buttons);
+	input_report_abs(input, ABS_WHEEL, (ring & 0x80) ? (ring & 0x7f) : 0);
+
+	input_report_key(input, wacom->tool[1], prox ? 1 : 0);
+
+	active = (ring ^ wacom->previous_ring) || (buttons ^ wacom->previous_buttons);
+
+	input_report_abs(input, ABS_MISC, prox ? PAD_DEVICE_ID : 0);
+
+	wacom->previous_buttons = buttons;
+	wacom->previous_ring = ring;
+
+	if (active)
+		input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
+	else
+		return 0;
 
 	return 1;
 }
@@ -1603,6 +1642,26 @@ static int wacom_mspro_irq(struct wacom_wac *wacom)
 			return wacom_mspro_pen_irq(wacom);
 		case WACOM_REPORT_MSPROPAD:
 			return wacom_mspro_pad_irq(wacom);
+		case WACOM_REPORT_MSPRODEVICE:
+			return 0;
+		default:
+			dev_dbg(input->dev.parent,
+				"%s: received unknown report #%d\n", __func__, data[0]);
+			break;
+	}
+	return 0;
+}
+
+static int wacom_intuosp2_irq(struct wacom_wac *wacom)
+{
+	unsigned char *data = wacom->data;
+	struct input_dev *input = wacom->input;
+
+	switch (data[0]) {
+		case WACOM_REPORT_MSPRO:
+			return wacom_mspro_pen_irq(wacom);
+		case WACOM_REPORT_MSPROPAD:
+			return wacom_intuosp2_pad_irq(wacom);
 		case WACOM_REPORT_MSPRODEVICE:
 			return 0;
 		default:
@@ -2045,6 +2104,8 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 			input_set_abs_params(input_dev, ABS_RX, 0, features->x_phy, 0, 0);
 			input_set_abs_params(input_dev, ABS_RY, 0, features->y_phy, 0, 0);
 			__set_bit(BTN_TOOL_DOUBLETAP, input_dev->keybit);
+		} else {
+			wacom_wac->previous_ring = 0x7f;
 		}
 	case INTUOS5:
 	case INTUOS5L:

@@ -64,6 +64,7 @@
 #define WACOM_REPORT_CINTIQPAD		17
 #define WACOM_REPORT_MSPROPAD		17
 #define WACOM_REPORT_MSPRODEVICE	19
+#define WAC_CMD_LED_CONTROL_GENERIC     0x32
 
 /* device quirks */
 #define WACOM_QUIRK_BBTOUCH_LOWRES	0x0001
@@ -163,6 +164,8 @@ struct wacom_wac {
 	int num_contacts_left;
 	int contacts_to_send;
 	int slots[10];
+	int previous_buttons;
+	int previous_ring;
 };
 
 #endif
