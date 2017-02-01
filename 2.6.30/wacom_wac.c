@@ -2485,9 +2485,9 @@ static const struct wacom_features wacom_features_0x34E =
 	  WACOM_MSPRO, 13, WACOM_CINTIQ_OFFSET, WACOM_CINTIQ_OFFSET, WACOM_CINTIQ_OFFSET, WACOM_CINTIQ_OFFSET,
 	  .oVid = USB_VENDOR_ID_WACOM, .oPid = 0x34b };
 static const struct wacom_features wacom_features_0x357 =
-	{ "Wacom Intuos Pro M FOO", WACOM_PKGLEN_INTUOSP2, 44800, 29600, 8191, 63, INTUOSP2, 9 };
+	{ "Wacom Co,.Ltd. Wacom Intuos Pro M", WACOM_PKGLEN_INTUOSP2, 44800, 29600, 8191, 63, INTUOSP2, 9 };
 static const struct wacom_features wacom_features_0x358 =
-	{ "Wacom Intuos Pro L FOO", WACOM_PKGLEN_INTUOSP2, 62200, 43200, 8191, 63, INTUOSP2, 9 };
+	{ "Wacom Co,.Ltd. Wacom Intuos Pro L", WACOM_PKGLEN_INTUOSP2, 62200, 43200, 8191, 63, INTUOSP2, 9 };
 
 #define USB_DEVICE_WACOM(prod)					\
 	USB_DEVICE(USB_VENDOR_ID_WACOM, prod),			\
