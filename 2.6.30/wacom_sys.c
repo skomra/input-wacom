@@ -41,6 +41,7 @@
 #define HID_COLLECTION			0xa0
 #define HID_COLLECTION_LOGICAL		0x02
 #define HID_COLLECTION_END		0xc0
+#define HID_LONGITEM			0xfc
 
 
 enum {
@@ -176,25 +177,6 @@ static void wacom_close(struct input_dev *dev)
 	mutex_unlock(&wacom->lock);
 }
 
-static int wacom_parse_logical_collection(unsigned char *report,
-					  struct wacom_features *features)
-{
-	int length = 0;
-
-	if (features->type == BAMBOO_PT) {
-
-		/* Logical collection is only used by 3rd gen Bamboo Touch */
-		features->pktlen = WACOM_PKGLEN_BBTOUCH3;
-		features->device_type = BTN_TOOL_DOUBLETAP;
-
-		features->x_max = features->y_max =
-			get_unaligned_le16(&report[10]);
-
-		length = 11;
-	}
-	return length;
-}
-
 static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hid_desc,
 			   struct wacom_features *features)
 {
@@ -263,7 +245,6 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 					features->unitExpo = report[i+6];
 					features->x_phy = get_unaligned_le16(&report[i + 10]);
 					features->x_max = get_unaligned_le16(&report[i + 15]);
-					len = 22;
 				}
 				break;
 
@@ -271,7 +252,6 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 				if (features->type == INTUOSP2) {
 					features->y_phy = get_unaligned_le16(&report[i + 4]);
 					features->y_max = get_unaligned_le16(&report[i + 7]);
-					len = 10;
 				}
 				break;
 
@@ -298,7 +278,6 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							get_unaligned_le16(&report[i + 5]);
 						features->x_max =
 							get_unaligned_le16(&report[i + 8]);
-						len = 15;
 					} else if (features->type == WACOM_MSPROT ||
 						   features->type == MTTPC_B) {
 						features->x_max =
@@ -307,7 +286,6 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							get_unaligned_le16(&report[i + 6]);
 						features->unit = report[i - 5];
 						features->unitExpo = report[i - 3];
-						len = 9;
 					} else {
 						features->x_max =
 							get_unaligned_le16(&report[i + 3]);
@@ -315,7 +293,6 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							get_unaligned_le16(&report[i + 6]);
 						features->unit = report[i + 9];
 						features->unitExpo = report[i + 11];
-						len = 12;
 					}
 				} else if (pen) {
 					/* penabled only accepts exact bytes of data */
@@ -327,7 +304,6 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 					features->device_type = BTN_TOOL_PEN;
 					features->x_max =
 						get_unaligned_le16(&report[i + 3]);
-					len = 4;
 				}
 				break;
 
@@ -339,31 +315,26 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							get_unaligned_le16(&report[i + 3]);
 						features->y_phy =
 							get_unaligned_le16(&report[i + 6]);
-						len = 7;
 					} else if (features->type == WACOM_MSPROT ||
 						   features->type == MTTPC_B) {
 						features->y_max =
 							get_unaligned_le16(&report[i + 3]);
 						features->y_phy =
 							get_unaligned_le16(&report[i + 6]);
-						len = 9;
 					} else if (features->type == BAMBOO_PT) {
 						features->y_phy =
 							get_unaligned_le16(&report[i + 3]);
 						features->y_max =
 							get_unaligned_le16(&report[i + 6]);
-						len = 12;
 					} else {
 						features->y_max =
 							features->x_max;
 						features->y_phy =
 							get_unaligned_le16(&report[i + 3]);
-						len = 4;
 					}
 				} else if (pen) {
 					features->y_max =
 						get_unaligned_le16(&report[i + 3]);
-					len = 4;
 				}
 				break;
 
@@ -381,7 +352,6 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 				if (pen) {
 					features->pressure_max =
 						get_unaligned_le16(&report[i + 3]);
-					len = 4;
 				}
 				break;
 			}
@@ -395,10 +365,24 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 		case HID_COLLECTION:
 			switch (data) {
 			case HID_COLLECTION_LOGICAL:
-				len = wacom_parse_logical_collection(&report[i],
-								    features);
+				if (features->type == BAMBOO_PT) {
+					features->pktlen = WACOM_PKGLEN_BBTOUCH3;
+					features->device_type = BTN_TOOL_DOUBLETAP;
+
+					features->x_max = features->y_max =
+						get_unaligned_le16(&report[10]);
+				}
 				break;
 			}
+			break;
+
+		case HID_LONGITEM:
+			/*
+			 * HID "Long Items" can contain up to 255 bytes
+			 * of data. We don't use long items, so just
+			 * update the length to skip over it entirely.
+			 */
+			len += data & 0x00FF;
 			break;
 		}
 
