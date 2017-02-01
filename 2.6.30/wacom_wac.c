@@ -2198,7 +2198,8 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 		break;
 	}
 
-	wacom_setup_numbered_buttons(input_dev, features->numbered_buttons);
+	if (features->device_type == BTN_TOOL_PEN)
+		wacom_setup_numbered_buttons(input_dev, features->numbered_buttons);
 }
 
 static const struct wacom_features wacom_features_0x00 =
