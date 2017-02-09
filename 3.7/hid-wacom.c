@@ -36,6 +36,9 @@
 #define USB_VENDOR_ID_WACOM             0x056a
 #define USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH  0x81
 #define USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH   0x00BD
+#define USB_DEVICE_ID_WACOM_INTUOSP2M_BLUETOOTH	0x360
+#define USB_DEVICE_ID_WACOM_INTUOSP2L_BLUETOOTH	0x361
+
 
 struct wacom_data {
 	__u16 tool;
@@ -697,6 +700,7 @@ static int wacom_raw_event(struct hid_device *hdev, struct hid_report *report,
 	int i;
 	__u8 power_raw;
 
+	printk("WACOM RAW EVENT\n");
 	if (!(hdev->claimed & HID_CLAIMED_INPUT))
 		return 0;
 
@@ -943,6 +947,8 @@ static void wacom_remove(struct hid_device *hdev)
 static const struct hid_device_id wacom_devices[] = {
 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH) },
 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH) },
+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_INTUOSP2M_BLUETOOTH) },
+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_INTUOSP2L_BLUETOOTH) },
 
 	{ }
 };

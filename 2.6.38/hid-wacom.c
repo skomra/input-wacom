@@ -37,6 +37,8 @@
 #define USB_VENDOR_ID_WACOM			0x056a
 #define USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH	0x81
 #define USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH	0x00BD
+#define USB_DEVICE_ID_WACOM_INTUOSP2M_BLUETOOTH        0x360
+#define USB_DEVICE_ID_WACOM_INTUOSP2L_BLUETOOTH        0x361
 
 #define PAD_DEVICE_ID	0x0F
 
@@ -820,6 +822,7 @@ static int wacom_probe(struct hid_device *hdev,
 	struct wacom_data *wdata;
 	int ret;
 
+        printk("  HID WACOM AARON PROBE 2.6.38\n");
 	wdata = kzalloc(sizeof(*wdata), GFP_KERNEL);
 	if (wdata == NULL) {
 		hid_err(hdev, "can't alloc wacom descriptor\n");
@@ -954,6 +957,8 @@ static void wacom_remove(struct hid_device *hdev)
 static const struct hid_device_id wacom_devices[] = {
 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH) },
 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH) },
+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_INTUOSP2M_BLUETOOTH) },
+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_INTUOSP2L_BLUETOOTH) },
 
 	{ }
 };
