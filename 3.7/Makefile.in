@@ -11,7 +11,6 @@ wacom-objs := wacom_wac.o wacom_sys.o
 obj-m += wacom.o
 obj-m += wacom_w8001.o
 obj-m += hid-wacom.o
-
 else
 $(error You requested to build wacom with configure, but wacom is configured as built-in in your kernel config)
 endif # CONFIG_USB_WACOM
@@ -44,7 +43,9 @@ uninstall:
 	@# first cd into the directory and then remove.
 	cd $(WCM_KERNEL_DIR)/../extra; rm wacom.ko*
 	cd $(WCM_KERNEL_DIR)/../extra; rm wacom_w8001.ko*
+	cd $(WCM_KERNEL_DIR)/../extra; rm hid-wacom.ko*
 	rm -f /etc/depmod.d/input-wacom.conf
+	rm -f /etc/depmod.d/hid-wacom.conf
 	PATH="$(PATH):/bin:/sbin" depmod -a $(MODUTS)
 
 endif  # End kbuild check
