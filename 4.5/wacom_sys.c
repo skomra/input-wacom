@@ -1828,6 +1828,7 @@ static void wacom_remotes_destroy(void *data)
 	struct wacom *wacom = data;
 	struct wacom_remote *remote = wacom->remote;
 
+        printk("wacom_remotes_destroy\n");
 	if (!remote)
 		return;
 
@@ -2382,6 +2383,8 @@ static void wacom_remote_destroy_one(struct wacom *wacom, unsigned int index)
 	int i;
 	unsigned long flags;
 
+	printk("wacom_remote_destroy_one %i\n", index);
+
 	spin_lock_irqsave(&remote->remote_lock, flags);
 	remote->remotes[index].registered = false;
 	spin_unlock_irqrestore(&remote->remote_lock, flags);
@@ -2421,10 +2424,12 @@ static int wacom_remote_create_one(struct wacom *wacom, u32 serial,
 	}
 
 	if (k < WACOM_MAX_REMOTES) {
+		printk("duplicate pairing - no remote created %i %i\n", index, serial);
 		remote->remotes[index].serial = serial;
 		return 0;
 	}
 
+	printk("wacom_remote_create_one %i %i\n", index, serial);
 	if (!devres_open_group(dev, &remote->remotes[index], GFP_KERNEL))
 		return -ENOMEM;
 
