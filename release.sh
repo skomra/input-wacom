@@ -121,10 +121,10 @@ release_to_sourceforge () {
         section_path="projects/linuxwacom/files/$section"
         srv_path="/home/frs/project/linuxwacom/$section"
 
-        echo "creating shell on sourceforge for $USER_NAME"
-        ssh ${USER_NAME%@},linuxwacom@$hostname create
+        echo "creating shell on sourceforge for $SF_USERNAME"
+        ssh ${SF_USERNAME%@},linuxwacom@$hostname create
         #echo "Simply log out once you get to the prompt"
-        #ssh -t ${USER_NAME%@},linuxwacom@$hostname create
+        #ssh -t ${SF_USERNAME%@},linuxwacom@$hostname create
         #echo "Sleeping for 30 seconds, because this sometimes helps against sourceforge's random authentication denials"
         #sleep 30
     fi
@@ -133,7 +133,7 @@ release_to_sourceforge () {
     # srv_path="~/public_html$srv_path"
 
     # Check that the server path actually does exist
-    ssh $USER_NAME$hostname ls $srv_path >/dev/null 2>&1 ||
+    ssh $SF_USERNAME$hostname ls $srv_path >/dev/null 2>&1 ||
     if [ $? -ne 0 ]; then
 	echo "Error: the path \"$srv_path\" on the web server does not exist."
 	cd $top_src
@@ -142,7 +142,7 @@ release_to_sourceforge () {
 
     # Check for already existing tarballs
     for tarball in $targz $tarbz2 $tarxz; do
-	ssh $USER_NAME$hostname ls $srv_path/$tarball  >/dev/null 2>&1
+	ssh $SF_USERNAME$hostname ls $srv_path/$tarball  >/dev/null 2>&1
 	if [ $? -eq 0 ]; then
 	    if [ "x$FORCE" = "xyes" ]; then
 		echo "Warning: overwriting released tarballs due to --force option."
@@ -157,7 +157,7 @@ release_to_sourceforge () {
     # Upload to host using the 'scp' remote file copy program
     if [ x"$DRY_RUN" = x ]; then
 	echo "Info: uploading tarballs to web server:"
-	scp $targz $tarbz2 $tarxz $siggz $sigbz2 $sigxz $USER_NAME$hostname:$srv_path
+	scp $targz $tarbz2 $tarxz $siggz $sigbz2 $sigxz $SF_USERNAME$hostname:$srv_path
 	if [ $? -ne 0 ]; then
 	    echo "Error: the tarballs uploading failed."
 	    cd $top_src
@@ -191,12 +191,13 @@ check_json_message() {
 release_to_github() {
     # Creating a release on Github automatically creates a tag.
 
-    #dependency 'jq' for reading the json github sends us back
+    # dependency 'jq' for reading the json github sends us back
 
-    #note git_username should include the suffix ":KEY" if the user has enabled 2FA
-    #example skomra:de0e4dc3efbf2d008053027708227b365b7f80bf
+    # note git_username should include the suffix ":KEY" if the user has enabled 2FA
+    # example skomra:de0e4dc3efbf2d008053027708227b365b7f80bf
 
-    GH_REPO=linuxwacom
+    GH_REPO="skomra"
+    PROJECT="input-wacom"
     release_description="Temporary Empty Release Description"
     release_descr=$(jq -n --arg release_description "$release_description" '$release_description')
 
@@ -207,7 +208,7 @@ release_to_github() {
                         "body": %s,
                         "draft": false,
                         "prerelease": false}' "$tar_name" "$tar_name" "$release_descr")
-    create_result=`curl -s --data "$api_json" -u $GH_USERNAME https://api.github.com/repos/$GH_REPO/input-wacom/releases`
+    create_result=`curl -s --data "$api_json" -u $GH_USERNAME https://api.github.com/repos/$GH_REPO/$PROJECT/releases`
     GH_RELEASE_ID=`echo $create_result | jq '.id'`
 
     check_json_message "$create_result"
@@ -216,7 +217,7 @@ release_to_github() {
     upload_result=`curl -s -u $GH_USERNAME \
         -H "Content-Type: application/x-bzip" \
         --data-binary @$tarbz2 \
-        "https://uploads.github.com/repos/$GH_REPO/input-wacom/releases/$GH_RELEASE_ID/assets?name=$tarbz2"`
+        "https://uploads.github.com/repos/$GH_REPO/$PROJECT/releases/$GH_RELEASE_ID/assets?name=$tarbz2"`
     GH_DL_URL=`echo $upload_result | jq -r '.browser_download_url'`
 
     check_json_message "$upload_result"
@@ -225,7 +226,7 @@ release_to_github() {
     sig_result=`curl -s -u $GH_USERNAME \
         -H "Content-Type: application/pgp-signature" \
         --data-binary @$tarbz2.sig \
-        "https://uploads.github.com/repos/$GH_REPO/input-wacom/releases/$GH_RELEASE_ID/assets?name=$tarbz2.sig"`
+        "https://uploads.github.com/repos/$GH_REPO/$PROJECT/releases/$GH_RELEASE_ID/assets?name=$tarbz2.sig"`
     GH_SIG_URL=`echo $sig_result | jq -r '.browser_download_url'`
 
     check_json_message "$sig_result"
@@ -645,11 +646,13 @@ process_module() {
 	echo "Info: skipped pushing tag \"$tag_name\" to the remote repository in dry-run mode."
     fi
 
-    if [ -n "$USER_NAME" ]; then
+    if [ -n "$SF_USERNAME" ]; then
         release_to_sourceforge
     fi
 
-    release_to_github
+    if [ -n "$GH_USERNAME" ]; then
+        release_to_github
+    fi
 
     # --------- Generate the announce e-mail ------------------
     # Failing to generate the announce is not considered a fatal error
@@ -676,7 +679,8 @@ process_module() {
     fi
     generate_announce > "$tar_name.announce"
     echo "Info: [ANNOUNCE] template generated in \"$tar_name.announce\" file."
-    echo "      Please pgp sign and send it."
+    echo "      Please edit the .announce file to add a description of what's interesting and then"
+    echo "      pgp sign and send it."
 
     # --------- Update the "body" text of the Github release with the .announce file -----------------
 
@@ -690,10 +694,10 @@ process_module() {
                             "body": %s,
                             "draft": false,
                             "prerelease": false}' "$tar_name" "$tar_name" "$release_descr")
-        create_result=`curl -s -X PATCH --data "$api_json" -u $GH_USERNAME https://api.github.com/repos/$GH_REPO/input-wacom/releases/$GH_RELEASE_ID`
+        create_result=`curl -s -X PATCH --data "$api_json" -u $GH_USERNAME https://api.github.com/repos/$GH_REPO/$PROJECT/releases/$GH_RELEASE_ID`
 
         check_json_message "$create_result"
-        echo "Announcement posted to release at Github."
+        echo "Git shortlog posted to the release at Github, please edit the release to add a description of what's interesting."
     fi
 
     # --------- Successful completion --------------------------
@@ -809,16 +813,18 @@ do
     --no-quit)
 	NO_QUIT=yes
 	;;
-    # Github username with possible Personal Access Token
+    # Github username. Optional. Append colon and Personali
+    # Access Token to username if 2FA is enabled on the user
+    # account doing the release
     --github)
 	GH_USERNAME=$2
 	shift
 	;;
-    # Username of your fdo account if not configured in ssh
-    --user)
+    # Sourceforge username. Optional.
+    --sourceforge)
 	check_option_args $1 $2
 	shift
-	USER_NAME=$1
+	SF_USERNAME=$1
 	;;
     --*)
 	echo ""
@@ -849,9 +855,9 @@ do
     shift
 done
 
-if [ x$GH_USERNAME = x ] ; then
-    echo "--github option required"
-    exit 1
+if [[ x$GH_USERNAME = "x" ]] && [[ x$SF_USERNAME = "x" ]] ; then
+    echo "At least one of --github or --sourceforge option required";
+    exit 1;
 fi
 
 # If no modules specified (blank cmd line) display help
