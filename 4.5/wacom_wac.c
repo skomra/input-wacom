@@ -1111,6 +1111,9 @@ static void wacom_remote_status_irq(struct wacom_wac *wacom_wac, size_t len)
 		remote_data.remote[i].connected = connected;
 	}
 
+//	printk("%i %i %i %i %i\n", remote_data.remote[0].serial , remote_data.remote[1].serial
+//				 , remote_data.remote[2].serial , remote_data.remote[3].serial
+//				 , remote_data.remote[4].serial);
 	spin_lock_irqsave(&remote->remote_lock, flags);
 
 	ret = kfifo_in(&remote->remote_fifo, &remote_data, sizeof(remote_data));

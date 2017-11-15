@@ -2383,25 +2383,26 @@ static void wacom_remote_destroy_one(struct wacom *wacom, unsigned int index)
 	int i;
 	unsigned long flags;
 
-	printk("wacom_remote_destroy_one %i\n", index);
+	printk("wacom_remote_destroy_one index: %i serial: %i\n", index, serial);
 
-	spin_lock_irqsave(&remote->remote_lock, flags);
-	remote->remotes[index].registered = false;
-	spin_unlock_irqrestore(&remote->remote_lock, flags);
-
-	if (remote->remotes[index].battery.battery)
-		devres_release_group(&wacom->hdev->dev,
-				     &remote->remotes[index].battery.bat_desc);
-
-	if (remote->remotes[index].group.name)
-		devres_release_group(&wacom->hdev->dev,
-				     &remote->remotes[index]);
 
 	for (i = 0; i < WACOM_MAX_REMOTES; i++) {
 		if (remote->remotes[i].serial == serial) {
+
+			if (remote->remotes[i].battery.battery)
+				devres_release_group(&wacom->hdev->dev,
+						     &remote->remotes[i].battery.bat_desc);
+
+			if (remote->remotes[i].group.name)
+				devres_release_group(&wacom->hdev->dev,
+						     &remote->remotes[i]);
+
+			printk("wacom_destroy remote %i serial %i\n",i,serial);
 			remote->remotes[i].serial = 0;
 			remote->remotes[i].group.name = NULL;
+			spin_lock_irqsave(&remote->remote_lock, flags);
 			remote->remotes[i].registered = false;
+			spin_unlock_irqrestore(&remote->remote_lock, flags);
 			remote->remotes[i].battery.battery = NULL;
 			wacom->led.groups[i].select = WACOM_STATUS_UNKNOWN;
 		}
@@ -2424,7 +2425,7 @@ static int wacom_remote_create_one(struct wacom *wacom, u32 serial,
 	}
 
 	if (k < WACOM_MAX_REMOTES) {
-		printk("duplicate pairing - no remote created %i %i\n", index, serial);
+		printk("wacom_ duplicate pairing - no remote created %i %i\n", index, serial);
 		remote->remotes[index].serial = serial;
 		return 0;
 	}
@@ -2535,12 +2536,16 @@ static void wacom_remote_work(struct work_struct *work)
 				continue;
 			}
 
-			if (remote->remotes[i].serial)
+			if (remote->remotes[i].serial) {
+				printk("wacom_ connected destroy\n");
 				wacom_remote_destroy_one(wacom, i);
+			}
 
 			wacom_remote_create_one(wacom, serial, i);
 
 		} else if (remote->remotes[i].serial) {
+			printk("wacom_ not connected destroy\n");
+
 			wacom_remote_destroy_one(wacom, i);
 		}
 	}
