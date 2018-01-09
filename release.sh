@@ -15,6 +15,14 @@
 export LC_ALL=C
 
 #------------------------------------------------------------------------------
+#			Function: check_for_jq
+#------------------------------------------------------------------------------
+#
+check_for_jq() {
+    command -v jq >/dev/null 2>&1 || { echo >&2 "This script requires jq but it is not installed. Exiting."; exit 1;}
+}
+
+#------------------------------------------------------------------------------
 #			Function: check_local_changes
 #------------------------------------------------------------------------------
 #
@@ -732,6 +740,9 @@ HELP
 
 # Choose which make program to use (could be gmake)
 MAKE=${MAKE:="make"}
+
+# Check if the json parser 'jq' is installed
+check_for_jq
 
 # Choose which grep program to use (on Solaris, must be gnu grep)
 if [ "x$GREP" = "x" ] ; then
