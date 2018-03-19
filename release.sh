@@ -264,9 +264,9 @@ RELEASE
 
 	cat <<RELEASE
 $DL_URL
-MD5:  `$MD5SUM $tarball`
-SHA1: `$SHA1SUM $tarball`
-SHA256: `$SHA256SUM $tarball`
+MD5:  `$MD5SUM $tarbz2`
+SHA1: `$SHA1SUM $tarbz2`
+SHA256: `$SHA256SUM $tarbz2`
 PGP: $PGP_URL
 
 RELEASE
@@ -376,12 +376,12 @@ get_section() {
 	module_url=`echo $module_url | cut -d'/' -f3,4`
     else
 	# The look for mesa, xcb, etc...
-	module_url=`echo "$full_module_url" | $GREP -o -e "/linuxwacom/.*"`
+	module_url=`echo "$full_module_url" | $GREP -o -e "linuxwacom/.*"`
 	if [ $? -eq 0 ]; then
 	     module_url=`echo $module_url | cut -d'/' -f2,3`
 	else
 	    echo "Error: unable to locate a valid project url from \"$full_module_url\"."
-	    echo "Cannot establish url as one of linuxwacom, xorg, mesa, xcb, xf86-video-nouveau, xkeyboard-config or wayland"
+	    echo "Cannot establish url as linuxwacom"
 	    cd $top_src
 	    return 1
 	fi
