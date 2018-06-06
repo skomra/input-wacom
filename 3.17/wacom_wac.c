@@ -4492,10 +4492,10 @@ static const struct wacom_features wacom_features_0x379 =
 	  INTUOSHT3_BT, WACOM_INTUOS_RES, WACOM_INTUOS_RES, 4 };
 static const struct wacom_features wacom_features_0x37A =
 	{ "Wacom One by Wacom S", 15200, 9500, 2047, 63,
-	  BAMBOO_PEN, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
+	  BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
 static const struct wacom_features wacom_features_0x37B =
 	{ "Wacom One by Wacom M", 21600, 13500, 2047, 63,
-	  BAMBOO_PEN, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
+	  BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
 
 static const struct wacom_features wacom_features_HID_ANY_ID =
 	{ "Wacom HID", .type = HID_GENERIC, .oVid = HID_ANY_ID, .oPid = HID_ANY_ID };
