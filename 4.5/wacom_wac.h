@@ -204,7 +204,8 @@
 				 ((f)->application == WACOM_HID_G9_TOUCHSCREEN) || \
 				 ((f)->application == WACOM_HID_G11_TOUCHSCREEN) || \
 				 ((f)->application == WACOM_HID_WT_TOUCHPAD) || \
-				 ((f)->application == HID_DG_TOUCHPAD))
+				 ((f)->application == HID_DG_TOUCHPAD) || \
++                                ((f)->application == 0xff0d0001)) // FIXME remove
 
 #define WACOM_DIRECT_DEVICE(f)	(((f)->application == HID_DG_TOUCHSCREEN) || \
 				 ((f)->application == WACOM_HID_WT_TOUCHSCREEN) || \

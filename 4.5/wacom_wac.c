@@ -2639,10 +2639,10 @@ void wacom_wac_event(struct hid_device *hdev, struct hid_field *field,
 		wacom_wac_battery_event(hdev, field, usage, value);
 	else if (WACOM_PAD_FIELD(field) && wacom->wacom_wac.pad_input)
 		wacom_wac_pad_event(hdev, field, usage, value);
-	else if (WACOM_PEN_FIELD(field) && wacom->wacom_wac.pen_input)
-		wacom_wac_pen_event(hdev, field, usage, value);
 	else if (WACOM_FINGER_FIELD(field) && wacom->wacom_wac.touch_input)
 		wacom_wac_finger_event(hdev, field, usage, value);
+	else if (WACOM_PEN_FIELD(field) && wacom->wacom_wac.pen_input)
+		wacom_wac_pen_event(hdev, field, usage, value);
 }
 
 static void wacom_report_events(struct hid_device *hdev,
