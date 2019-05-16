@@ -2662,9 +2662,12 @@ static void wacom_report_events(struct hid_device *hdev,
 			continue;
 
 		for (n = 0 ; n < count; n++) {
-			if (field->usage[n].collection_index == collection_index)
-				wacom_wac_event(hdev, field, &field->usage[n],
-						field->value[n]);
+			if (field->usage[n].collection_index == collection_index) {
+				if (field->usage[n].hid != WACOM_HID_WT_CONTACTCOUNT) {
+					wacom_wac_event(hdev, field, &field->usage[n],
+							field->value[n]);
+				}
+			}
 			else
 				return;
 		}
