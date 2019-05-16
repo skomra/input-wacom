@@ -1742,6 +1742,9 @@ int wacom_equivalent_usage(int usage)
 			return usage;
 		}
 
+		if (usage == WACOM_HID_WT_REPORT_VALID)
+			return usage;
+
 		if (subpage == HID_UP_UNDEFINED)
 			subpage = HID_UP_DIGITIZER;
 
@@ -2522,11 +2525,16 @@ static void wacom_wac_finger_event(struct hid_device *hdev,
 	case HID_DG_TIPSWITCH:
 		wacom_wac->hid_data.tipswitch = value;
 		break;
+	case WACOM_HID_WT_REPORT_VALID:
+		wacom_wac->is_invalid_bt_finger_frame = !value;
+		return;
 	case HID_DG_CONTACTMAX:
 		features->touch_max = value;
 		return;
 	}
 
+	if (wacom_wac->is_invalid_bt_finger_frame)
+		return;
 
 	if (usage->usage_index + 1 == field->report_count) {
 		if (equivalent_usage == wacom_wac->hid_data.last_slot_field)
