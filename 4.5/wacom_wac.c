@@ -2570,24 +2570,8 @@ static void wacom_wac_finger_pre_report(struct hid_device *hdev,
 			case HID_DG_TIPSWITCH:
 				hid_data->last_slot_field = equivalent_usage;
 				break;
-			case HID_DG_CONTACTCOUNT:
-				hid_data->cc_report = report->id;
-				hid_data->cc_index = i;
-				hid_data->cc_value_index = j;
-				break;
 			}
 		}
-	}
-
-	if (hid_data->cc_report != 0 &&
-	    hid_data->cc_index >= 0) {
-		struct hid_field *field = report->field[hid_data->cc_index];
-		int value = field->value[hid_data->cc_value_index];
-		if (value)
-			hid_data->num_expected = value;
-	}
-	else {
-		hid_data->num_expected = wacom_wac->features.touch_max;
 	}
 }
 
@@ -2598,6 +2582,7 @@ static void wacom_wac_finger_report(struct hid_device *hdev,
 	struct wacom_wac *wacom_wac = &wacom->wacom_wac;
 	struct input_dev *input = wacom_wac->touch_input;
 	unsigned touch_max = wacom_wac->features.touch_max;
+	struct hid_data* hid_data = &wacom_wac->hid_data;
 
 	/* If more packets of data are expected, give us a chance to
 	 * process them rather than immediately syncing a partial
@@ -2611,6 +2596,7 @@ static void wacom_wac_finger_report(struct hid_device *hdev,
 
 	input_sync(input);
 	wacom_wac->hid_data.num_received = 0;
+	hid_data->num_expected = 0;
 
 	/* keep touch state for pen event */
 	wacom_wac->shared->touch_down = wacom_wac_finger_count_touches(wacom_wac);
@@ -2685,12 +2671,59 @@ static void wacom_report_events(struct hid_device *hdev,
 	}
 }
 
+static void wacom_set_num_expected(struct hid_device *hdev, struct hid_report *report,
+                        int collection_index, struct hid_field *field,
+                        int field_index)
+{
+       struct wacom *wacom = hid_get_drvdata(hdev);
+       struct wacom_wac *wacom_wac = &wacom->wacom_wac;
+       struct hid_data* hid_data = &wacom_wac->hid_data;
+       int r;
+       bool end_collection = false;
+
+        if (hid_data->num_expected)
+                return;
+
+       for (r = field_index; r < report->maxfield; r++) {
+               // find the contact count value for this segment
+               struct hid_field *field = report->field[r];
+               unsigned j;
+
+               if (end_collection)
+                       break;
+               for (j = 0; j < field->maxusage; j++) {
+                       struct hid_usage *usage = &field->usage[j];
+
+                       if (field->usage[j].collection_index > collection_index) {
+                               end_collection = true;
+                               break;
+                       }
+                       if (wacom_equivalent_usage(usage->hid) == HID_DG_CONTACTCOUNT) {
+                               hid_data->cc_report = report->id;
+                               hid_data->cc_index = r;
+                               hid_data->cc_value_index = j;
+
+                               if (hid_data->cc_report != 0 && hid_data->cc_index >= 0) {
+                                       struct hid_field *field = report->field[hid_data->cc_index];
+                                       int value = field->value[hid_data->cc_value_index];
+                                       if (value)
+                                               hid_data->num_expected = value;
+                               }
+                       }
+               }
+       }
+
+       if (hid_data->cc_report == 0 || hid_data->cc_index < 0)
+               hid_data->num_expected = wacom_wac->features.touch_max;
+}
+
 static int wacom_wac_collection(struct hid_device *hdev, struct hid_report *report,
 			 int collection_index, struct hid_field *field,
 			 int field_index)
 {
 	struct wacom *wacom = hid_get_drvdata(hdev);
 
+	wacom_set_num_expected(hdev, report, collection_index, field, field_index);
 	wacom_report_events(hdev, report, collection_index, field_index);
 
 	/*
