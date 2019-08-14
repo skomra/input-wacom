@@ -49,4 +49,4 @@ jobs:
       - git fetch upstream master
       - git format-patch FETCH_HEAD
     script:
-      - if ls *.patch 2>/dev/null; then ./checkpatch.pl --no-tree *.patch; fi
+      - if ls *.patch 2>/dev/null; then ./checkpatch.pl --no-tree --max-line-length=90 --ignore OPEN_BRACE --ignore EMAIL_SUBJECT *.patch; fi
