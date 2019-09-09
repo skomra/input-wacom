@@ -2289,6 +2289,7 @@ static void wacom_wac_pen_event(struct hid_device *hdev, struct hid_field *field
 
 	if (wacom_wac->is_invalid_bt_frame)
 		return;
+	printk("wacom wac pen event\n");
 
 	switch (equivalent_usage) {
 	case HID_GD_Z:
@@ -2710,7 +2711,7 @@ void wacom_wac_event(struct hid_device *hdev, struct hid_field *field,
 
 	if (wacom->wacom_wac.features.type != HID_GENERIC)
 		return;
-
+printk("wacom wac event\n");
 	if (value > field->logical_maximum || value < field->logical_minimum)
 		return;
 
@@ -3623,7 +3624,7 @@ static int wacom_mspro_irq(struct wacom_wac *wacom)
 {
 	unsigned char *data = wacom->data;
 	//struct input_dev *input = wacom->input;
-
+	printk("mspro_irqi\n");
 	switch (data[0]) {
 		case WACOM_REPORT_MSPRO:
 			return wacom_mspro_pen_irq(wacom);
@@ -3644,8 +3645,11 @@ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
 {
 	bool sync;
 
+	printk("wacom wac irq\n");
 	switch (wacom_wac->features.type) {
 	case INTUOSP2:
+		printk("wacom wac irq inutos p2\n");
+
 		if (len == WACOM_PKGLEN_INTUOSP2T &&
 		    wacom_wac->data[0] == WACOM_REPORT_VENDOR_DEF_TOUCH)
 			sync = wacom_multitouch_generic(wacom_wac);
@@ -5217,8 +5221,8 @@ const struct hid_device_id wacom_ids[] = {
 	{ USB_DEVICE_WACOM(0x33D) },
 	{ USB_DEVICE_WACOM(0x33E) },
 	{ USB_DEVICE_WACOM(0x343) },
-	{ BT_DEVICE_WACOM(0x357) },
-	{ BT_DEVICE_WACOM(0x358) },
+	{ USB_DEVICE_WACOM(0x357) },
+	{ USB_DEVICE_WACOM(0x358) },
 	{ BT_DEVICE_WACOM(0x360) },
 	{ BT_DEVICE_WACOM(0x361) },
 	{ BT_DEVICE_WACOM(0x377) },

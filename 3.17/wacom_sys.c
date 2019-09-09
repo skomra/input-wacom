@@ -208,14 +208,18 @@ static int wacom_raw_event(struct hid_device *hdev, struct hid_report *report,
 {
 	struct wacom *wacom = hid_get_drvdata(hdev);
 
+	printk("raw event 1\n");
 	if (size > WACOM_PKGLEN_MAX)
 		return 1;
 
+	printk("raw event 2\n");
 	if (wacom_wac_pen_serial_enforce(hdev, report, raw_data, size))
 		return -1;
 
+	printk("raw event 3\n");
 	memcpy(wacom->wacom_wac.data, raw_data, size);
 
+	printk("raw event 4\n");
 	wacom_wac_irq(&wacom->wacom_wac, size);
 
 	return 0;
@@ -2601,9 +2605,12 @@ static int wacom_probe(struct hid_device *hdev,
 	struct wacom_features *features;
 	int error;
 
+
+	printk("probe 1\n");
 	if (!id->driver_data)
 		return -EINVAL;
 
+	printk("probe 2\n");
 	hdev->quirks |= HID_QUIRK_NO_INIT_REPORTS;
 
 	/* hid-core sets this quirk for the boot interface */
@@ -2660,6 +2667,7 @@ static int wacom_probe(struct hid_device *hdev,
 				 error);
 	}
 
+	printk("probe exit\n");
 	return 0;
 
 fail:
