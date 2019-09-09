@@ -5050,10 +5050,10 @@ static const struct wacom_features wacom_features_0x393 =
 	  INTUOSP2S_BT, WACOM_INTUOS3_RES, WACOM_INTUOS3_RES, 7,
 	  .touch_max = 10 };
 static const struct wacom_features wacom_features_0x357 =
-	{ "Wacom Intuos Pro M", WACOM_PKGLEN_INTUOSP2, 44800, 29600, 8191, 63,
+	{ "Wacom Intuos Pro M", 44800, 29600, 8191, 63,
 	  INTUOSP2, WACOM_INTUOS3_RES, WACOM_INTUOS3_RES, 9, .touch_max = 10 };
 static const struct wacom_features wacom_features_0x358 =
-	{ "Wacom Intuos Pro L", WACOM_PKGLEN_INTUOSP2, 62200, 43200, 8191, 63,
+	{ "Wacom Intuos Pro L", 62200, 43200, 8191, 63,
 	  INTUOSP2, WACOM_INTUOS3_RES, WACOM_INTUOS3_RES, 9, .touch_max = 10 };
 
 static const struct wacom_features wacom_features_HID_ANY_ID =
