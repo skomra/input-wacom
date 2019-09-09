@@ -2155,6 +2155,7 @@ static int wacom_parse_and_register(struct wacom *wacom, bool wireless)
 	int error;
 	unsigned int connect_mask = HID_CONNECT_HIDRAW;
 
+	printk("wacom parse and register 0\n");
 	features->pktlen = wacom_compute_pktlen(hdev);
 	if (features->pktlen > WACOM_PKGLEN_MAX)
 		return -EINVAL;
@@ -2162,6 +2163,7 @@ static int wacom_parse_and_register(struct wacom *wacom, bool wireless)
 	if (!devres_open_group(&hdev->dev, wacom, GFP_KERNEL))
 		return -ENOMEM;
 
+	printk("wacom parse and register 1\n");
 	wacom->resources = true;
 
 	error = wacom_allocate_inputs(wacom);
@@ -2273,6 +2275,7 @@ static int wacom_parse_and_register(struct wacom *wacom, bool wireless)
 	wacom_set_shared_values(wacom_wac);
 	devres_close_group(&hdev->dev, wacom);
 
+	printk("wacom parse and register exit\n");
 	return 0;
 
 fail_quirks:
@@ -2290,6 +2293,7 @@ fail_parsed:
 fail_allocate_inputs:
 fail_open_group:
 	wacom_release_resources(wacom);
+	printk("wacom parse and register fail\n");
 	return error;
 }
 
@@ -2665,6 +2669,7 @@ static int wacom_probe(struct hid_device *hdev,
 
 	printk("probe 7\n");
 	if (hdev->bus == BUS_BLUETOOTH) {
+	printk("probe  bluetooth !\n");
 		error = device_create_file(&hdev->dev, &dev_attr_speed);
 		if (error)
 			hid_warn(hdev,
