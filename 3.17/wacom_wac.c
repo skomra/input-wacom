@@ -3645,7 +3645,7 @@ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
 {
 	bool sync;
 
-	printk("wacom wac irq\n");
+	printk("wacom wac irq %i\n", wacom_wac->features.type);
 	switch (wacom_wac->features.type) {
 	case INTUOSP2:
 		printk("wacom wac irq inutos p2\n");
