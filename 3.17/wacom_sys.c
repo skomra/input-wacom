@@ -2620,6 +2620,7 @@ static int wacom_probe(struct hid_device *hdev,
 	if (!wacom)
 		return -ENOMEM;
 
+	printk("probe 3\n");
 	hid_set_drvdata(hdev, wacom);
 	wacom->hdev = hdev;
 
@@ -2632,6 +2633,7 @@ static int wacom_probe(struct hid_device *hdev,
 		goto fail;
 	}
 
+	printk("probe 4\n");
 	error = kfifo_alloc(&wacom_wac->pen_fifo, WACOM_PKGLEN_MAX, GFP_KERNEL);
 	if (error)
 		goto fail;
@@ -2639,6 +2641,7 @@ static int wacom_probe(struct hid_device *hdev,
 	wacom_wac->hid_data.inputmode = -1;
 	wacom_wac->mode_report = -1;
 
+	printk("probe 5\n");
 	wacom->usbdev = dev;
 	wacom->intf = intf;
 	mutex_init(&wacom->lock);
@@ -2655,10 +2658,12 @@ static int wacom_probe(struct hid_device *hdev,
 		goto fail;
 	}
 
+	printk("probe 6\n");
 	error = wacom_parse_and_register(wacom, false);
 	if (error)
 		goto fail;
 
+	printk("probe 7\n");
 	if (hdev->bus == BUS_BLUETOOTH) {
 		error = device_create_file(&hdev->dev, &dev_attr_speed);
 		if (error)
