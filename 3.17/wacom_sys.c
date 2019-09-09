@@ -2671,6 +2671,7 @@ static int wacom_probe(struct hid_device *hdev,
 	return 0;
 
 fail:
+	printk("wacom fail");
 	hid_set_drvdata(hdev, NULL);
 	return error;
 }
