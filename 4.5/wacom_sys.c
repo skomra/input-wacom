@@ -1727,7 +1727,11 @@ static void wacom_init_work(struct work_struct *work)
 
 static void wacom_query_tablet_data(struct wacom *wacom)
 {
-	schedule_delayed_work(&wacom->init_work, msecs_to_jiffies(1000));
+	if (wacom->hdev->product == 0x37a ||
+	    wacom->hdev->product == 0x37b)
+		_wacom_query_tablet_data(wacom);
+	else
+		schedule_delayed_work(&wacom->init_work, msecs_to_jiffies(1000));
 }
 
 static enum power_supply_property wacom_battery_props[] = {
