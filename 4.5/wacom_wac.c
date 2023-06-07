@@ -1145,6 +1145,8 @@ static int wacom_remote_irq(struct wacom_wac *wacom_wac, size_t len)
 		goto out;
 
 	input = remote->remotes[index].input;
+	remote->remotes[i].seen_after_creation = true;
+	remote->remotes[i].active_time = ktime_get();
 
 	input_report_key(input, BTN_0, (data[9] & 0x01));
 	input_report_key(input, BTN_1, (data[9] & 0x02));

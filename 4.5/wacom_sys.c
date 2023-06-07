@@ -2608,6 +2608,7 @@ static void wacom_remote_destroy_one(struct wacom *wacom, unsigned int index)
 			remote->remotes[i].serial = 0;
 			remote->remotes[i].group.name = NULL;
 			remote->remotes[i].battery.battery = NULL;
+			remote->remotes[i].seen_after_creation = false;
 			wacom->led.groups[i].select = WACOM_STATUS_UNKNOWN;
 		}
 	}
@@ -2671,6 +2672,7 @@ static int wacom_remote_create_one(struct wacom *wacom, u32 serial,
 		goto fail;
 
 	remote->remotes[index].registered = true;
+	remote->remotes[index].seen_after_creation = false;
 
 	devres_close_group(dev, &remote->remotes[index]);
 	return 0;
@@ -2712,6 +2714,9 @@ static void wacom_remote_work(struct work_struct *work)
 	unsigned int count;
 	u32 serial;
 	int i;
+	ktime_t kt;
+
+	kt = ktime_get();
 
 	spin_lock_irqsave(&remote->remote_lock, flags);
 
@@ -2744,6 +2749,11 @@ static void wacom_remote_work(struct work_struct *work)
 			wacom_remote_create_one(wacom, serial, i);
 
 		} else if (remote->remotes[i].serial) {
+			wacom_remote_destroy_one(wacom, i);
+		}
+	}
+	for (i = 0; i < WACOM_MAX_REMOTES; i++) {
+		if (kt - remote->remotes[i].active_time > WACOM_REMOTE_BATTERY_TIMEOUT && remote->remotes[i].seen_after_creation) {
 			wacom_remote_destroy_one(wacom, i);
 		}
 	}
